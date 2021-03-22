@@ -3,6 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.samplestickerapp">
 
+    <uses-permission android:name="com.whatsapp.sticker.READ" />
+    <uses-permission android:name="com.whatsapp.provider.media" />
+    <uses-permission android:name="com.whatsapp.provider.media.read" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <uses-permission android:name="COM.WHATSAPP.PERMISSION.BROADCAST" />
+
+
     <application
         android:name=".StickerApplication"
         android:allowBackup="false"
@@ -13,7 +21,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".EntryActivity">
+        <activity android:name=".EntryActivity" android:exported="true" >
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -44,5 +53,6 @@
             android:enabled="true"
             android:exported="true"
             android:readPermission="com.whatsapp.sticker.READ" />
+
     </application>
 </manifest>

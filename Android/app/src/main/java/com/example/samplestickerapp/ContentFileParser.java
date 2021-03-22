@@ -8,24 +8,54 @@
 
 package com.example.samplestickerapp;
 
+import android.os.Environment;
 import android.text.TextUtils;
 import android.util.JsonReader;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-class ContentFileParser {
+class
+ContentFileParser {
 
     @NonNull
     static List<StickerPack> parseStickerPacks(@NonNull InputStream contentsInputStream) throws IOException, IllegalStateException {
-        try (JsonReader reader = new JsonReader(new InputStreamReader(contentsInputStream))) {
+        /*try (JsonReader reader = new JsonReader(new InputStreamReader(contentsInputStream))) {
             return readStickerPacks(reader);
+        }*/
+
+        //PRUEBA
+        String identifier = "1";
+        String name = "Cuppy";
+        String publisher = "Jane Doe";
+        String trayImageFile = "tray_Cuppy.png";
+        String publisherEmail = "";
+        String publisherWebsite = "";
+        String privacyPolicyWebsite = "";
+        String licenseAgreementWebsite = "";
+        String imageDataVersion = "1";
+        boolean avoidCache = false;
+        String androidPlayStoreLink = "";
+        String iosAppStoreLink = "";
+        List<StickerPack> stickerPackList = new ArrayList<>();
+        List<Sticker> stickerList = readStickers();
+        final StickerPack stickerPack= new StickerPack(identifier, name, publisher, trayImageFile, publisherEmail, publisherWebsite, privacyPolicyWebsite, licenseAgreementWebsite, imageDataVersion, avoidCache);
+        stickerPack.setStickers(stickerList);
+        stickerPackList.add(stickerPack);
+        for (StickerPack stickerPackIter : stickerPackList) {
+            stickerPackIter.setAndroidPlayStoreLink(androidPlayStoreLink);
+            stickerPackIter.setIosAppStoreLink(iosAppStoreLink);
         }
+        //Log.v("CANTSTICKERS",Integer.toString(stickerList.size()));
+        return stickerPackList;
     }
 
     @NonNull
@@ -182,6 +212,100 @@ class ContentFileParser {
             stickerList.add(new Sticker(imageFile, emojis));
         }
         reader.endArray();
+        return stickerList;
+    }
+
+    //HACER PRIVATE (AUNQUE LA FUNCION ES MIA)
+    @NonNull
+    public static List<Sticker> readStickers() throws IOException, IllegalStateException {
+        /*
+        reader.beginArray();
+        List<Sticker> stickerList = new ArrayList<>();
+
+        while (reader.hasNext()) {
+            reader.beginObject();
+            String imageFile = null;
+            List<String> emojis = new ArrayList<>(StickerPackValidator.EMOJI_MAX_LIMIT);
+            while (reader.hasNext()) {
+                final String key = reader.nextName();
+                if ("image_file".equals(key)) {
+                    imageFile = reader.nextString();
+                } else if ("emojis".equals(key)) {
+                    reader.beginArray();
+                    while (reader.hasNext()) {
+                        String emoji = reader.nextString();
+                        if (!TextUtils.isEmpty(emoji)) {
+                            emojis.add(emoji);
+                        }
+                    }
+                    reader.endArray();
+                } else {
+                    throw new IllegalStateException("unknown field in json: " + key);
+                }
+            }
+            reader.endObject();
+            if (TextUtils.isEmpty(imageFile)) {
+                throw new IllegalStateException("sticker image_file cannot be empty");
+            }
+            if (!imageFile.endsWith(".webp")) {
+                throw new IllegalStateException("image file for stickers should be webp files, image file is: " + imageFile);
+            }
+            if (imageFile.contains("..") || imageFile.contains("/")) {
+                throw new IllegalStateException("the file name should not contain .. or / to prevent directory traversal, image file is:" + imageFile);
+            }
+            stickerList.add(new Sticker(imageFile, emojis));
+        }
+        reader.endArray();
+        */
+        List<Sticker> stickerList = new ArrayList<>();
+        //create new file directory object
+        File dirPrueba = new File(Environment.getDataDirectory().getAbsolutePath()
+                + "data/com.whatsapp/files");
+        File file = new File(Environment.getDataDirectory().getAbsolutePath()
+                + "data/com.whatsapp/files/key");
+        Log.v("KEYEXISTDIR", String.valueOf(Environment.getDataDirectory()));
+        Log.v("KEYEXISTDIR",Environment.getDataDirectory().getAbsolutePath());
+        Log.v("KEYEXISTDIR",Boolean.toString(dirPrueba.exists()));
+        Log.v("KEYEXISTARCH",Boolean.toString(file.exists()));
+        File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath()
+                + "/WhatsApp/Media/WhatsApp Stickers");
+        //Log.v("ENVIRDIR", String.valueOf(Environment.getDataDirectory()));
+        /*
+         * this checks to see if there are any previous test photo files
+         * if there are any photos, they are deleted for the sake of
+         * memory
+         */
+        String imageFile = null;
+        List<String> emojis = new ArrayList<>(StickerPackValidator.EMOJI_MAX_LIMIT);
+        emojis.add("🙂");
+        Log.v("EXISTE DIR",Boolean.toString(directory.exists()));
+        if (directory.exists()) {
+            //FileReader reader = new FileReader(directory);
+            File[] dirFiles = directory.listFiles();
+
+            Log.v("EXISTARCH DE STICKERS",Boolean.toString(dirFiles!=null));
+            Log.v("CANTSTICKERS",Integer.toString(dirFiles.length));
+            if (dirFiles.length != 0) {
+                for (int ii = 0; ii < dirFiles.length; ii++) {
+                //for (int ii = 0; ii < 30; ii++) {
+                    imageFile = dirFiles[ii].getName();
+                    if(ii>=0 && ii<=5)
+                        Log.v("FILENAMES",imageFile);
+                    if(!imageFile.equals(".nomedia")) {
+                        if (TextUtils.isEmpty(imageFile)) {
+                            throw new IllegalStateException("sticker image_file cannot be empty");
+                        }
+                        if (!imageFile.endsWith(".webp")) {
+                            throw new IllegalStateException("image file for stickers should be webp files, image file is: " + imageFile);
+                        }
+                        if (imageFile.contains("..") || imageFile.contains("/")) {
+                            throw new IllegalStateException("the file name should not contain .. or / to prevent directory traversal, image file is:" + imageFile);
+                        }
+                        stickerList.add(new Sticker(imageFile, emojis));
+                    }
+                }
+            }
+    }
         return stickerList;
     }
 }

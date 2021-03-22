@@ -108,9 +108,12 @@ class StickerPackValidator {
             throw new IllegalStateException("Cannot open tray image, " + stickerPack.trayImageFile, e);
         }
         final List<Sticker> stickers = stickerPack.getStickers();
+        //DESCOMENTAR
+        /*
         if (stickers.size() < STICKER_SIZE_MIN || stickers.size() > STICKER_SIZE_MAX) {
             throw new IllegalStateException("sticker pack sticker count should be between 3 to 30 inclusive, it currently has " + stickers.size() + ", sticker pack identifier:" + stickerPack.identifier);
         }
+         */
         for (final Sticker sticker : stickers) {
             validateSticker(context, stickerPack.identifier, sticker);
         }
@@ -132,20 +135,29 @@ class StickerPackValidator {
     private static void validateStickerFile(@NonNull Context context, @NonNull String identifier, @NonNull final String fileName) throws IllegalStateException {
         try {
             final byte[] bytes = StickerPackLoader.fetchStickerAsset(identifier, fileName, context.getContentResolver());
+            //DESCOMENTAR
+            /*
             if (bytes.length > STICKER_FILE_SIZE_LIMIT_KB * ONE_KIBIBYTE) {
                 throw new IllegalStateException("sticker should be less than " + STICKER_FILE_SIZE_LIMIT_KB + "KB, sticker pack identifier:" + identifier + ", filename:" + fileName);
             }
+             */
             try {
                 final WebPImage webPImage = WebPImage.createFromByteArray(bytes);
+                //Log.v("IMAGE_HEIGHT",Integer.toString(webPImage.getHeight()));
+                //Log.v("IMAGE_WIDTH",Integer.toString(webPImage.getWidth()));
+                //DESCOMENTAR
+                /*
                 if (webPImage.getHeight() != IMAGE_HEIGHT) {
                     throw new IllegalStateException("sticker height should be " + IMAGE_HEIGHT + ", sticker pack identifier:" + identifier + ", filename:" + fileName);
                 }
                 if (webPImage.getWidth() != IMAGE_WIDTH) {
                     throw new IllegalStateException("sticker width should be " + IMAGE_WIDTH + ", sticker pack identifier:" + identifier + ", filename:" + fileName);
                 }
+
                 if (webPImage.getFrameCount() > 1) {
                     throw new IllegalStateException("sticker should be a static image, no animated sticker support at the moment, sticker pack identifier:" + identifier + ", filename:" + fileName);
                 }
+                 */
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("Error parsing webp image, sticker pack identifier:" + identifier + ", filename:" + fileName, e);
             }

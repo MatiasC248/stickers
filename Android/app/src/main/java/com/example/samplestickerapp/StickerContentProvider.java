@@ -18,18 +18,24 @@ import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import com.example.samplestickerapp.BuildConfig;
 
 public class StickerContentProvider extends ContentProvider {
 
@@ -53,12 +59,19 @@ public class StickerContentProvider extends ContentProvider {
     public static final String STICKER_FILE_EMOJI_IN_QUERY = "sticker_emoji";
     private static final String CONTENT_FILE_NAME = "contents.json";
 
+    //PRUEBA
+    //AGREGADO ---> Uri wpProvider = Uri.parse("content://com.whatsapp.provider.media/stickers");
+
+    //public static final Uri AUTHORITY_URI = new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority("com.whatsapp.provider.media").appendPath(StickerContentProvider.METADATA).build();
+
     public static final Uri AUTHORITY_URI = new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(BuildConfig.CONTENT_PROVIDER_AUTHORITY).appendPath(StickerContentProvider.METADATA).build();
+
 
     /**
      * Do not change the values in the UriMatcher because otherwise, WhatsApp will not be able to fetch the stickers from the ContentProvider.
      */
     private static final UriMatcher MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
+
     private static final String METADATA = "metadata";
     private static final int METADATA_CODE = 1;
 
@@ -89,6 +102,7 @@ public class StickerContentProvider extends ContentProvider {
 
         //gets the list of stickers for a sticker pack, * respresent the identifier.
         MATCHER.addURI(authority, STICKERS + "/*", STICKERS_CODE);
+
 
         for (StickerPack stickerPack : getStickerPackList()) {
             MATCHER.addURI(authority, STICKERS_ASSET + "/" + stickerPack.identifier + "/" + stickerPack.trayImageFile, STICKER_PACK_TRAY_ICON_CODE);
@@ -145,6 +159,7 @@ public class StickerContentProvider extends ContentProvider {
         }
     }
 
+    //.open(CONTENT_FILE_NAME) ----> estos archivos locales
     private synchronized void readContentFile(@NonNull Context context) {
         try (InputStream contentsInputStream = context.getAssets().open(CONTENT_FILE_NAME)) {
             stickerPackList = ContentFileParser.parseStickerPacks(contentsInputStream);
@@ -226,6 +241,7 @@ public class StickerContentProvider extends ContentProvider {
         return cursor;
     }
 
+    //DESCOMENTAR fetchFile Y LLAMADAS AL METODO
     private AssetFileDescriptor getImageAsset(Uri uri) throws IllegalArgumentException {
         AssetManager am = Objects.requireNonNull(getContext()).getAssets();
         final List<String> pathSegments = uri.getPathSegments();
@@ -244,11 +260,13 @@ public class StickerContentProvider extends ContentProvider {
         for (StickerPack stickerPack : getStickerPackList()) {
             if (identifier.equals(stickerPack.identifier)) {
                 if (fileName.equals(stickerPack.trayImageFile)) {
-                    return fetchFile(uri, am, fileName, identifier);
+                    //return fetchFile(uri, am, fileName, identifier);
+                    return fetchFile(uri, am, fileName, identifier, "trayImage");
                 } else {
                     for (Sticker sticker : stickerPack.getStickers()) {
                         if (fileName.equals(sticker.imageFileName)) {
-                            return fetchFile(uri, am, fileName, identifier);
+                            //return fetchFile(uri, am, fileName, identifier);
+                            return fetchFile(uri, am, fileName, identifier,"sticker");
                         }
                     }
                 }
@@ -257,6 +275,8 @@ public class StickerContentProvider extends ContentProvider {
         return null;
     }
 
+    //FUNCION ORIGINAL
+    /*
     private AssetFileDescriptor fetchFile(@NonNull Uri uri, @NonNull AssetManager am, @NonNull String fileName, @NonNull String identifier) {
         try {
             return am.openFd(identifier + "/" + fileName);
@@ -265,8 +285,56 @@ public class StickerContentProvider extends ContentProvider {
             return null;
         }
     }
+    */
 
+    private AssetFileDescriptor fetchFile(@NonNull Uri uri, @NonNull AssetManager am, @NonNull String fileName, @NonNull String identifier, @NonNull String fileType) {
+        String trayImage = "trayImage", sticker = "sticker";
+        try {
+            if(fileType.equals(trayImage)){
+                return am.openFd(identifier + "/" + fileName);
+            }
+            else if(fileType.equals(sticker)){
+                //final File cacheFile = getContext().getExternalCacheDir();
+                //final File file = new File(cacheFile, fileName);
+                final File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/WhatsApp/Media/WhatsApp Stickers" + "/" + fileName);
+                final FileOutputStream fileOutputStream = new FileOutputStream(file);
+                /*byte[] buffer = new byte[1024];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }*/
+                return new AssetFileDescriptor(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY), 0, AssetFileDescriptor.UNKNOWN_LENGTH);
+                //return am.openFd(Environment.getExternalStorageDirectory().getAbsolutePath() + "/WhatsApp/Media/WhatsApp Stickers" + "/" + fileName);
+            }
+            else {
+                return null;
+            }
+        } catch (IOException e) {
+            Log.e(Objects.requireNonNull(getContext()).getPackageName(), "IOException when getting asset file, uri:" + uri, e);
+            return null;
+        }
+    }
 
+    /*
+    ///////////////////////////////////////
+    private AssetFileDescriptor fetchFilePrueba(@NonNull Uri uri, @NonNull AssetManager am, @NonNull String fileName, @NonNull String identifier) throws IOException {
+        final File cacheFile = getContext().getExternalCacheDir();
+        final File file = new File(cacheFile, fileName);
+        try (final InputStream open = am.open(identifier + "/" + fileName);
+             final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+        }
+        //The code above is basically copying the assets to storage, and servering the file off of the storage.
+        //If you have the files already downloaded/fetched, you could simply replace above part, and initialize the file parameter with your own file which points to the desired file.
+        //The key here is you can use ParcelFileDescriptor to create an AssetFileDescriptor.
+        return new AssetFileDescriptor(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY), 0, AssetFileDescriptor.UNKNOWN_LENGTH);
+    }
+    //////////////////////////////////////
+    */
     @Override
     public int delete(@NonNull Uri uri, @Nullable String selection, String[] selectionArgs) {
         throw new UnsupportedOperationException("Not supported");

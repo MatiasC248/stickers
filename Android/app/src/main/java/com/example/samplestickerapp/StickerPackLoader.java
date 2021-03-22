@@ -14,9 +14,13 @@ import android.database.Cursor;
 import android.net.Uri;
 
 import androidx.annotation.NonNull;
+
+import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -45,13 +49,18 @@ class StickerPackLoader {
      * Get the list of sticker packs for the sticker content provider
      */
     @NonNull
-    static ArrayList<StickerPack> fetchStickerPacks(Context context) throws IllegalStateException {
+    static ArrayList<StickerPack> fetchStickerPacks(Context context) throws IllegalStateException, IOException {
         final Cursor cursor = context.getContentResolver().query(StickerContentProvider.AUTHORITY_URI, null, null, null, null);
+
+
         if (cursor == null) {
             throw new IllegalStateException("could not fetch from content provider, " + BuildConfig.CONTENT_PROVIDER_AUTHORITY);
         }
         HashSet<String> identifierSet = new HashSet<>();
         final ArrayList<StickerPack> stickerPackList = fetchFromContentProvider(cursor);
+
+        //Log.v("CANT PACKS DE STICKERS",Integer.toString(stickerPackList.size()));
+
         for (StickerPack stickerPack : stickerPackList) {
             if (identifierSet.contains(stickerPack.identifier)) {
                 throw new IllegalStateException("sticker pack identifiers should be unique, there are more than one pack with identifier:" + stickerPack.identifier);
@@ -62,14 +71,22 @@ class StickerPackLoader {
         if (stickerPackList.isEmpty()) {
             throw new IllegalStateException("There should be at least one sticker pack in the app");
         }
+
+
         for (StickerPack stickerPack : stickerPackList) {
-            final List<Sticker> stickers = getStickersForPack(context, stickerPack);
+
+            //PRUEBA
+            //final List<Sticker> stickers = getStickersForPack(context, stickerPack);
+            final List<Sticker> stickers = ContentFileParser.readStickers();
             stickerPack.setStickers(stickers);
+
             StickerPackValidator.verifyStickerPackValidity(context, stickerPack);
         }
+
         return stickerPackList;
     }
 
+    //HACER PRIVATE
     @NonNull
     private static List<Sticker> getStickersForPack(Context context, StickerPack stickerPack) {
         final List<Sticker> stickers = fetchFromContentProviderForStickers(stickerPack.identifier, context.getContentResolver());
@@ -88,7 +105,7 @@ class StickerPackLoader {
         return stickers;
     }
 
-
+    //HACER PRIVATE
     @NonNull
     private static ArrayList<StickerPack> fetchFromContentProvider(Cursor cursor) {
         ArrayList<StickerPack> stickerPackList = new ArrayList<>();
@@ -139,6 +156,8 @@ class StickerPackLoader {
         return stickers;
     }
 
+
+    //MODIFICAR CALL A getStickerAssetUri(identifier, name)
     static byte[] fetchStickerAsset(@NonNull final String identifier, @NonNull final String name, ContentResolver contentResolver) throws IOException {
         try (final InputStream inputStream = contentResolver.openInputStream(getStickerAssetUri(identifier, name));
              final ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
@@ -159,7 +178,18 @@ class StickerPackLoader {
         return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(BuildConfig.CONTENT_PROVIDER_AUTHORITY).appendPath(StickerContentProvider.STICKERS).appendPath(identifier).build();
     }
 
+    //FUNCION ORIGINAL DESCOMENTAR
+    /*
     static Uri getStickerAssetUri(String identifier, String stickerName) {
         return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(BuildConfig.CONTENT_PROVIDER_AUTHORITY).appendPath(StickerContentProvider.STICKERS_ASSET).appendPath(identifier).appendPath(stickerName).build();
+    }
+     */
+
+    static Uri getStickerAssetUri(String identifier, String stickerName) {
+        if(stickerName.equals("tray_Cuppy.png"))
+            return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(BuildConfig.CONTENT_PROVIDER_AUTHORITY).appendPath(StickerContentProvider.STICKERS_ASSET).appendPath(identifier).appendPath(stickerName).build();
+        else
+            //return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(BuildConfig.CONTENT_PROVIDER_AUTHORITY).appendPath(Environment.getExternalStorageDirectory().getAbsolutePath() + "/WhatsApp/Media/WhatsApp Stickers").appendPath(stickerName).build();
+            return Uri.fromFile(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/WhatsApp/Media/WhatsApp Stickers/" + stickerName));
     }
 }

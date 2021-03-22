@@ -10,17 +10,23 @@ package com.example.samplestickerapp;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 public class EntryActivity extends BaseActivity {
     private View progressBar;
@@ -43,6 +49,8 @@ public class EntryActivity extends BaseActivity {
         progressBar.setVisibility(View.GONE);
         if (stickerPackList.size() > 1) {
             final Intent intent = new Intent(this, StickerPackListActivity.class);
+            //PRUEBA
+            //Intent intent1 = new Intent(this, Intent.)
             intent.putParcelableArrayListExtra(StickerPackListActivity.EXTRA_STICKER_PACK_LIST_DATA, stickerPackList);
             startActivity(intent);
             finish();
@@ -86,12 +94,17 @@ public class EntryActivity extends BaseActivity {
                 final Context context = contextWeakReference.get();
                 if (context != null) {
                     stickerPackList = StickerPackLoader.fetchStickerPacks(context);
+
                     if (stickerPackList.size() == 0) {
                         return new Pair<>("could not find any packs", null);
                     }
+
                     for (StickerPack stickerPack : stickerPackList) {
                         StickerPackValidator.verifyStickerPackValidity(context, stickerPack);
                     }
+
+                    Log.v("CANT PACKS DE STICKERS",Integer.toString(stickerPackList.size()));
+                    //Log.v("EXT STOR EXIST", Environment.getExternalStorageState());
                     return new Pair<>(null, stickerPackList);
                 } else {
                     return new Pair<>("could not fetch sticker packs", null);
